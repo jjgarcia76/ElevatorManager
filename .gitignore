@@ -1,0 +1,12 @@
+code .gitignore
+nano .gitignore
+
+#para ignorar las .class que crea javac 
+*.class
+
+.vscode/
+.DS_Store
+
+bin/
+out/
+build/
