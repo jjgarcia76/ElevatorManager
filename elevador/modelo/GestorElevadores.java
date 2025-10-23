@@ -4,8 +4,8 @@ package elevador.gestor;
 import elevador.modelo.Comando;
 import elevador.modelo.Elevador;
 
-import java.util.ArrayList;
-import java.util.List;
+//importaciones del ArrayList y List
+import java.util.*;
 
 public class GestorElevadores {
 
