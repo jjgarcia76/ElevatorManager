@@ -1,5 +1,7 @@
 //Hay que revisar como JP hace las importaciones a otras clases y los paquetes
-package elevador.modelo;
+package elevador.funcionalidades;
+
+import elevador.modelo.Tipos;
 import elevador.modelo.Tipos.TipoComando;
 
 public class Comando {

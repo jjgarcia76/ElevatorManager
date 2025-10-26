@@ -1,6 +1,8 @@
 //Este es de prueba despues se puede quitar
 package elevador.modelo;
 
+import elevador.funcionalidades.Comando;
+
 public class SimuladorElevador{
     public static void main(String[] args) {
         Elevador elevador1 = new Elevador(1, 10, 1000, 2000);

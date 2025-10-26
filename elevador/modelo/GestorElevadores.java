@@ -1,7 +1,7 @@
 //Hay que revisar como JP hace las importaciones a otras clases y los paquetes
-package elevador.gestor;
+package elevador.modelo;
 
-import elevador.modelo.Comando;
+import elevador.funcionalidades.Comando;
 import elevador.modelo.Elevador;
 
 //importaciones del ArrayList y List

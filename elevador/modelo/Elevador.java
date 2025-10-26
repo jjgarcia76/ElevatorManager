@@ -1,6 +1,7 @@
 //Hay que revisar como JP hace las importaciones a otras clases y los paquetes
 package elevador.modelo;
 
+import elevador.funcionalidades.Comando;
 import elevador.modelo.Tipos.Direccion;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
