@@ -10,6 +10,9 @@ public class Tipos{
     }
 
     public enum TipoComando {
-        IR_A
+        IR_A,
+        RECOGER,
+        RESET,
+        APAGAR
     }
 }

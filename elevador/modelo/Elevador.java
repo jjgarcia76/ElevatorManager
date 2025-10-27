@@ -3,120 +3,203 @@ package elevador.modelo;
 
 import elevador.funcionalidades.Comando;
 import elevador.modelo.Tipos.Direccion;
+import elevador.modelo.Tipos.TipoComando;
+
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.logging.*;
 
 public class Elevador implements Runnable {
+    //configuracion
     public int id;
     public int pisoMinimo = 1;
     public int pisoMaximo;
-    public long tiempoMovimientoMs;   
-    public long tiempoEsperaMs;       
+    public long tiempoMovimientoMs;  
+    public long tiempoEsperaMs;     
+
     public int pisoActual = 1;
-    public Direccion direccion = Direccion.QUIETO;
+    public Direccion direccion = Direccion.SUBE;
 
     public BlockingQueue<Comando> bandeja = new LinkedBlockingQueue<>();
-    public TreeSet<Integer> destinos = new TreeSet<>();
+    public TreeSet<Integer> paradasArriba = new TreeSet<>();
+    public TreeSet<Integer> paradasAbajo  = new TreeSet<>();
+
     public boolean ejecutando = true;
+
+    //un registros (logs) por cada accion del elevador
+    private Logger logger;
 
     public Elevador(int id, int pisoMaximo, long tiempoMovimientoMs, long tiempoEsperaMs) {
         this.id = id;
         this.pisoMaximo = pisoMaximo;
         this.tiempoMovimientoMs = tiempoMovimientoMs;
         this.tiempoEsperaMs = tiempoEsperaMs;
+        configurarLogger();
     }
 
-    //envia ordenes al elevador
+    private void configurarLogger() {
+        try {
+            logger = Logger.getLogger("Elevador" + id);
+            logger.setUseParentHandlers(true);
+            logger.setLevel(Level.INFO);
+
+            FileHandler file = new FileHandler("elevador" + id + ".log", false);
+            file.setFormatter(new SimpleFormatter());
+            logger.addHandler(file);
+        } catch (Exception e) {
+            System.out.println("Elevador " + id + " no pudo crear el log: ");
+        }
+    }
+
+    //API para enviar ordenes al elevador
     public void enviar(Comando cmd) {
         if (cmd == null) return;
-        if (cmd.piso < pisoMinimo || cmd.piso > pisoMaximo) {
-            System.out.println("Elevador " + id + ": este piso no es valido " + cmd.piso);
-            return;
+        if (cmd.piso != -1) {
+            if (cmd.piso < pisoMinimo || cmd.piso > pisoMaximo) {
+                logger.info("Este piso no es valido" + cmd.piso);
+                return;
+            }
         }
         bandeja.offer(cmd);
     }
 
     @Override
     public void run() {
-        System.out.println("Elevador " + id + " iniciado en piso " + pisoActual);
-
+        logger.info("Iniciado en piso " + pisoActual + " (dir=SUBE)");
         while (ejecutando) {
-
-            //1) Drenar comandos entrantes (no bloqueante)
+            // 1) Drenar bandeja
             drenarBandeja();
 
-            //2) Si no hay destinos, quedar en QUIETO y esperar un poco
-            if (destinos.isEmpty()) {
+            // 2) Si no hay paradas, idle breve
+            if (paradasArriba.isEmpty() && paradasAbajo.isEmpty()) {
                 direccion = Direccion.QUIETO;
-                dormir(tiempoCorto());
+                dormir(40);
                 continue;
             }
 
-            //3) Elegir destino cercano de forma simple
-            Integer pisoInferior = destinos.floor(pisoActual); 
-            Integer pisoSuperior = destinos.ceiling(pisoActual);
-
-            int objetivo;
-            if (pisoInferior == null) {
-                objetivo = pisoSuperior;
-            } else if (pisoSuperior == null) {
-                objetivo = pisoInferior;
-            } else {
-                int distAbajo = Math.abs(pisoActual - pisoInferior);
-                int distArriba = Math.abs(pisoSuperior - pisoActual);
-                objetivo = (distArriba <= distAbajo) ? pisoSuperior : pisoInferior;
+            // 3) Elegir sentido (SCAN)
+            if (direccion == Direccion.QUIETO) {
+                if (!paradasArriba.isEmpty() && !paradasAbajo.isEmpty()) {
+                    // elige sentido más cercano
+                    int distUp   = Math.abs((paradasArriba.first()) - pisoActual);
+                    int distDown = Math.abs((paradasAbajo.last())  - pisoActual);
+                    direccion = (distUp <= distDown) ? Direccion.SUBE : Direccion.BAJA;
+                } else if (!paradasArriba.isEmpty()) {
+                    direccion = Direccion.SUBE;
+                } else {
+                    direccion = Direccion.BAJA;
+                }
             }
 
-            //4) Mover un piso hacia el objetivo
-            if (objetivo > pisoActual) {
-                direccion = Direccion.SUBE;
-                dormir(tiempoMovimientoMs);
-                pisoActual++;
-                System.out.println("Elevador " + id + " sube al piso " + pisoActual);
-            } else if (objetivo < pisoActual) {
-                direccion = Direccion.BAJA;
-                dormir(tiempoMovimientoMs);
-                pisoActual--;
-                System.out.println("Elevador " + id + " baja al piso " + pisoActual);
-            } else {
-                //llega a la parada
-                destinos.remove(pisoActual);
-                System.out.println("Elevador " + id + " llegó al piso " + pisoActual + " (abrir/cerrar puertas)");
-                dormir(tiempoEsperaMs);
+            // 4) Mover según sentido
+            if (direccion == Direccion.SUBE) {
+                if (paradasArriba.isEmpty()) {
+                    if (!paradasAbajo.isEmpty()) {
+                        logger.info("Cambio de dirección: SUBE -> BAJA");
+                        direccion = Direccion.BAJA;
+                    } else {
+                        direccion = Direccion.QUIETO;
+                    }
+                    continue;
+                }
+                if (pisoActual < pisoMaximo) {
+                    dormir(tiempoMovimientoMs);
+                    pisoActual++;
+                    logger.info("Subiendo hacia piso " + pisoActual);
+                }
+                if (paradasArriba.contains(pisoActual)) {
+                    paradasArriba.remove(pisoActual);
+                    llegoYPara();
+                }
+            } else if (direccion == Direccion.BAJA) {
+                if (paradasAbajo.isEmpty()) {
+                    if (!paradasArriba.isEmpty()) {
+                        logger.info("Cambio de dirección: BAJA -> SUBE");
+                        direccion = Direccion.SUBE;
+                    } else {
+                        direccion = Direccion.QUIETO;
+                    }
+                    continue;
+                }
+                if (pisoActual > pisoMinimo) {
+                    dormir(tiempoMovimientoMs);
+                    pisoActual--;
+                    logger.info("Bajando hacia piso " + pisoActual);
+                }
+                if (paradasAbajo.contains(pisoActual)) {
+                    paradasAbajo.remove(pisoActual);
+                    llegoYPara();
+                }
             }
         }
-
-        System.out.println("Elevador " + id + " detenido.");
+        logger.info("Esta detenido");
     }
 
-    //lee la bandeja y agrega destinos a la lista
+    private void llegoYPara() {
+        logger.info("Llego al piso " + pisoActual + " (abrir/cerrar puertas)");
+        dormir(tiempoEsperaMs);
+        drenarBandeja();
+    }
+
     private void drenarBandeja() {
         Comando cmd;
         while ((cmd = bandeja.poll()) != null) {
-            if (cmd.piso != pisoActual) {
-                destinos.add(cmd.piso);
-                System.out.println("Elevador " + id + " nuevo destino agregado: piso " + cmd.piso);
-            } else {
-                //el elevador se encuentra en el no. de piso
-                System.out.println("Elevador " + id + " ya esta en piso " + cmd.piso + " (atendiendo)");
-                dormir(tiempoEsperaMs);
+            if (cmd.tipo == TipoComando.APAGAR) {
+                ejecutando = false;
+                return;
+            }
+            if (cmd.tipo == TipoComando.RESET) {
+                logger.info("RESET solicitado");
+                paradasArriba.clear();
+                paradasAbajo.clear();
+                //regresa al piso 1 si no esta en el piso 1
+                if (pisoActual > 1) {
+                    paradasAbajo.add(1);
+                    direccion = Direccion.BAJA;
+                } else {
+                    direccion = Direccion.SUBE;
+                }
+                continue;
+            }
+            if (cmd.tipo == TipoComando.RECOGER) {
+                agregarParada(cmd.piso);
+                logger.info("Pickup en piso " + cmd.piso + " (" + cmd.direccionDeseada + ")");
+                continue;
+            }
+            if (cmd.tipo == TipoComando.IR_A) {
+                //boton interno
+                agregarParada(cmd.piso);
+                logger.info("Destino interno agregado: piso " + cmd.piso);
             }
         }
     }
 
-    //para pausar el Thread
+    private void agregarParada(int piso) {
+        if (piso == pisoActual) {
+            logger.info("Atendiendo piso actual " + pisoActual);
+            dormir(tiempoEsperaMs);
+            return;
+        }
+        if (piso > pisoActual) paradasArriba.add(piso); else paradasAbajo.add(piso);
+    }
+
     private void dormir(long ms) {
         try {
             Thread.sleep(ms);
         } catch (InterruptedException e) {
-            System.out.println("Elevador " + id + " interrupcion: ");
+            logger.info("Interrupcion en: ");
         }
     }
 
-    //pequeña espera cuando no hay algo por hacer
-    private long tiempoCorto() {
-    //cambiar el numero ya que depende del tiempo de movimiento, se puede cambiar despues
-    return tiempoMovimientoMs / 10; 
+    //API para la clase UI.java
+    public int getPisoActual() { 
+        return pisoActual; 
+    }
+    public Direccion getDireccion() { 
+        return direccion; 
+    }
+    public int pendientes() { 
+        return paradasArriba.size() + paradasAbajo.size(); 
     }
 }

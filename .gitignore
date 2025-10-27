@@ -3,6 +3,8 @@ nano .gitignore
 
 #para ignorar las .class que crea javac 
 *.class
+#ignora los logs que hacemos
+*.log
 
 .vscode/
 .DS_Store

@@ -1,0 +1,3 @@
+javac elevador/modelo/*.java
+
+java elevador.modelo.Principal

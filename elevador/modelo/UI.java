@@ -1,79 +1,100 @@
 package elevador.modelo;
 
+import elevador.modelo.Tipos.Direccion;
+
+import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 
-public class UI extends Frame {
+public class UI extends JFrame {
 
-    public UI() {
-        super("Vista Principal");
-        
+    private final GestorElevadores gestor;
+    private final int pisos;
 
-        // Creacion de los paneles
-        ElevatorPanel panelElevador = new ElevatorPanel();
-        panelElevador.setPreferredSize(new Dimension(220, 420));
-        add(panelElevador, BorderLayout.CENTER);
+    private final JTextArea areaEstado = new JTextArea(10, 30);
 
-        // Cierre de ventana
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowClosing(java.awt.event.WindowEvent e) {
-                System.exit(0);
+    public UI(GestorElevadores gestor, int pisos) {
+        super("Elevator Manager");
+        this.gestor = gestor;
+        this.pisos = pisos;
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        // Panel de controles
+        JPanel controles = new JPanel(new GridLayout(0, 1, 6, 6));
+
+        // Solicitar desde pasillo
+        JPanel fila1 = new JPanel();
+        JTextField txtPiso = new JTextField(5);
+        JComboBox<Direccion> cbDir = new JComboBox<>(Direccion.values());
+        JButton btnSolicitar = new JButton("Solicitar elevador");
+        fila1.add(new JLabel("Piso:")); fila1.add(txtPiso);
+        fila1.add(new JLabel("Dirección:")); fila1.add(cbDir);
+        fila1.add(btnSolicitar);
+        controles.add(fila1);
+
+        // Ir a piso (interno)
+        JPanel fila2 = new JPanel();
+        JTextField txtId = new JTextField(3);
+        JTextField txtDestino = new JTextField(5);
+        JButton btnIr = new JButton("Ir a piso (interno)");
+        fila2.add(new JLabel("Elevador:")); fila2.add(txtId);
+        fila2.add(new JLabel("Destino:")); fila2.add(txtDestino);
+        fila2.add(btnIr);
+        controles.add(fila2);
+
+        // Reset / Stop
+        JPanel fila3 = new JPanel();
+        JButton btnReset = new JButton("Reset");
+        JButton btnStop  = new JButton("Stop");
+        fila3.add(btnReset); fila3.add(btnStop);
+        controles.add(fila3);
+
+        add(controles, BorderLayout.NORTH);
+
+        // Estado
+        areaEstado.setEditable(false);
+        add(new JScrollPane(areaEstado), BorderLayout.CENTER);
+
+        // Listeners
+        btnSolicitar.addActionListener((ActionEvent e) -> {
+            try {
+                int piso = Integer.parseInt(txtPiso.getText().trim());
+                Direccion dir = (Direccion) cbDir.getSelectedItem();
+                if (piso < 1 || piso > pisos) throw new IllegalArgumentException("Piso fuera de rango");
+                gestor.solicitarDesdePasillo(piso, dir);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
             }
         });
 
-        // Ajusta la pantalla automaticamente
-        pack();
-        // Evita que se pueda editar el tamaño
-        setResizable(false);
-        // Hace que sea visible (NO PONER FALSE)
+        btnIr.addActionListener((ActionEvent e) -> {
+            try {
+                int id = Integer.parseInt(txtId.getText().trim());
+                int dest = Integer.parseInt(txtDestino.getText().trim());
+                if (dest < 1 || dest > pisos) throw new IllegalArgumentException("Piso fuera de rango");
+                gestor.irAPiso(id, dest);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+            }
+        });
+
+        btnReset.addActionListener(e -> gestor.resetTodos());
+        btnStop.addActionListener(e -> gestor.detener());
+
+        // Timer de refresco
+        new Timer(200, e -> refrescarEstado()).start();
+
+        setSize(600, 400);
+        setLocationRelativeTo(null);
         setVisible(true);
     }
 
-    
-    class ElevatorPanel extends Panel {
-        // DATO QUEMADO (cantidad de pisos pero se distorciona porque son datos predeterminados)
-        private final int pisos = 5; 
-
-        @Override
-        public void paint(Graphics g) {
-            super.paint(g);
-
-            int w = getWidth();
-            int h = getHeight();
-
-            // Estilos tipo css
-            int margin = 20;               
-            int ejeX = margin + 40;        
-            int ejeY = margin;
-            int ancho = w - ejeX - margin;
-            int alto = h - 2 * margin;
-
-            // Fondo del hueco del elevador
-            g.setColor(new Color(220, 220, 220));
-            g.fillRect(ejeX, ejeY, ancho, alto);
-
-            // Líneas divisorias para los pisos
-            g.setColor(Color.DARK_GRAY);
-            int altoPiso = alto / pisos;
-            for (int i = 0; i <= pisos; i++) {
-                int y = ejeY + i * altoPiso;
-                g.drawLine(ejeX, y, ejeX + ancho, y);
-                if (i < pisos) {
-                    g.drawString("Piso " + (pisos - i), margin, y + altoPiso / 2);
-                }
-            }
-
-            // Este es el primer piso que por el momento no hace nada
-            int cabinaAltura = altoPiso - 10;
-            int cabinaAncho = Math.max(60, ancho - 40);
-            int cabinaX = ejeX + (ancho - cabinaAncho) / 2;
-            int cabinaY = ejeY + alto - altoPiso + 5;
-
-            g.setColor(new Color(70, 130, 180)); 
-            g.fillRect(cabinaX, cabinaY, cabinaAncho, cabinaAltura);
-            g.setColor(Color.BLACK);
-            g.drawRect(cabinaX, cabinaY, cabinaAncho, cabinaAltura);
-            g.drawString("Cabina", cabinaX + (cabinaAncho / 2) - 20, cabinaY - 8);
-        }
+    private void refrescarEstado() {
+        StringBuilder sb = new StringBuilder();
+        for (String s : gestor.estados()) sb.append(s).append('\n');
+        areaEstado.setText(sb.toString());
     }
 }
+
