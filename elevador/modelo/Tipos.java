@@ -14,5 +14,5 @@ public class Tipos{
         RECOGER,
         RESET,
         APAGAR
-    }
+    }  
 }

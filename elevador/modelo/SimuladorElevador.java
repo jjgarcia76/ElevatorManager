@@ -1,4 +1,5 @@
 //Este es de prueba despues se puede quitar
+//Esta clase no forma parte del programa final, solo se creo para pruebas de inicio
 package elevador.modelo;
 
 import elevador.funcionalidades.Comando;
@@ -9,15 +10,18 @@ public class SimuladorElevador {
         Thread hilo = new Thread(elevador1);
         hilo.start();
 
-        // Usar métodos de fábrica
         elevador1.enviar(Comando.irA(5));
         elevador1.enviar(Comando.irA(2));
         elevador1.enviar(Comando.irA(8));
 
-        try { Thread.sleep(15000); } catch (InterruptedException e) { e.printStackTrace(); }
+        try {
+            Thread.sleep(15000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
-        elevador1.ejecutando = false;
-        System.out.println("Simulación finalizada.");
+        elevador1.enviar(Comando.apagar());
+        System.out.println("Fin de la prueba");
     }
 }
 
