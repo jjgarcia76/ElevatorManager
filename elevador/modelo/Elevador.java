@@ -154,8 +154,8 @@ public class Elevador implements Runnable {
                 if (paradasArriba.isEmpty()) {
 
                     if (!paradasAbajo.isEmpty()) {
-                        logger.info("[Elevador " + id + "] Cambio de dirección: SUBE -> BAJA");
-                        System.out.println("[Elevador " + id + "] Cambio de dirección: SUBE -> BAJA");
+                        logger.info("[Elevador " + id + "] Cambio de direccion: SUBE -> BAJA");
+                        System.out.println("[Elevador " + id + "] Cambio de direccion: SUBE -> BAJA");
                         direccion = Direccion.BAJA;
                     } else {
                         direccion = Direccion.QUIETO;
@@ -210,8 +210,8 @@ public class Elevador implements Runnable {
             }
         }
 
-        logger.info("[Elevador " + id + "] Detenido (APAGAR recibido o STOP).");
-        System.out.println("[Elevador " + id + "] HILO TERMINADO.");
+        logger.info("[Elevador " + id + "] Detenido (APAGAR recibido o STOP)");
+        System.out.println("[Elevador " + id + "] HILO TERMINADO");
     }
 
     //paradas de piso

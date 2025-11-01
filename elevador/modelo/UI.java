@@ -25,6 +25,7 @@ public class UI extends JFrame {
         super("Elevator Manager");
         this.gestor = gestor;
         this.pisos = pisos;
+
         try {
             for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -35,20 +36,20 @@ public class UI extends JFrame {
         } catch (Exception ignore) {}
         SwingUtilities.updateComponentTreeUI(this);
 
-        //esta parte es la ventana base
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(8, 8));
         getContentPane().setBackground(new Color(245, 245, 245));
 
-        //panel superior
         JPanel cardControles = new JPanel();
         cardControles.setLayout(new GridLayout(0, 1, 6, 6));
         cardControles.setBorder(
-                BorderFactory.createCompoundBorder(new LineBorder(new Color(200, 200, 200), 1, true), new EmptyBorder(10, 10, 10, 10))
+                BorderFactory.createCompoundBorder(
+                        new LineBorder(new Color(200, 200, 200), 1, true),
+                        new EmptyBorder(10, 10, 10, 10)
+                )
         );
         cardControles.setBackground(new Color(250, 250, 250));
 
-        //solicitar el elevador
         JPanel fila1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
         fila1.setOpaque(false);
         JTextField txtPiso = buildTextField(5);
@@ -63,8 +64,6 @@ public class UI extends JFrame {
         fila1.add(btnSolicitar);
 
         cardControles.add(fila1);
-
-        //Ir a No. de piso
         JPanel fila2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
         fila2.setOpaque(false);
         JTextField txtId = buildTextField(3);
@@ -79,7 +78,6 @@ public class UI extends JFrame {
 
         cardControles.add(fila2);
 
-        //Protocolo ESTA ES LA PARTE DE TEXTO 
         JPanel filaCmd = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
         filaCmd.setOpaque(false);
         JTextField txtIdCmd = buildTextField(3);
@@ -91,14 +89,14 @@ public class UI extends JFrame {
         filaCmd.add(buildLabel("Comando:"));
         filaCmd.add(txtComando);
         filaCmd.add(btnEnviarCmd);
-        JLabel hint = new JLabel("Ej: IR_A 7   |   RECOGER 4 SUBE   |   RESET   |   APAGAR");
+
+        JLabel hint = new JLabel("Ej: IR_A 7  |  RECOGER 4 SUBE  |  RESET  |  APAGAR");
         hint.setFont(new Font("Segoe UI", Font.ITALIC, 11));
         hint.setForeground(new Color(90, 90, 90));
         filaCmd.add(hint);
 
         cardControles.add(filaCmd);
 
-        //control del programa
         JPanel fila3 = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
         fila3.setOpaque(false);
         JButton btnReset = buildButton("Reset");
@@ -115,21 +113,12 @@ public class UI extends JFrame {
 
         add(cardControles, BorderLayout.NORTH);
 
-        //se mira en la consola el estado de los elevadores
         areaEstado.setEditable(false);
         areaEstado.setFont(new Font("Consolas", Font.PLAIN, 12));
         areaEstado.setBackground(Color.WHITE);
 
         JScrollPane scrollEstado = new JScrollPane(areaEstado);
-        scrollEstado.setBorder(
-                BorderFactory.createTitledBorder(
-                        new LineBorder(new Color(180, 180, 180), 1, true),
-                        "Estado de elevadores",
-                        0, 0,
-                        new Font("Segoe UI", Font.BOLD, 12),
-                        Color.DARK_GRAY
-                )
-        );
+        scrollEstado.setBorder(BorderFactory.createTitledBorder(new LineBorder(new Color(180, 180, 180), 1, true), "Estado de elevadores", 0, 0, new Font("Segoe UI", Font.BOLD, 12), Color.DARK_GRAY));
 
         scrollEstado.setPreferredSize(new Dimension(600, 140));
 
@@ -138,8 +127,6 @@ public class UI extends JFrame {
         panelEstadoWrapper.add(scrollEstado, BorderLayout.CENTER);
 
         add(panelEstadoWrapper, BorderLayout.CENTER);
-
-        //panel de abajo 
         panelGrafico = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -149,14 +136,14 @@ public class UI extends JFrame {
 
                 int n = gestor.elevadores.size();
                 if (n == 0) return;
-
                 int leftMargin = 30;
                 int topMargin = 30;
-                int colWidth = 200;
+                int colWidth = 200; 
+                int spacingX = 40;   
                 int cabinaWidth = 50;
-                int cabinaHeight;
-                int spacingX = 40;
                 int maxDrawHeight = 600;
+                int cabinaHeight;
+
                 if (pisos > 0) {
                     cabinaHeight = maxDrawHeight / pisos;
                 } else {
@@ -166,9 +153,11 @@ public class UI extends JFrame {
                 for (int i = 0; i < n; i++) {
                     Elevador e = gestor.elevadores.get(i);
                     int baseX = leftMargin + i * (colWidth + spacingX);
+
                     g.setColor(new Color(30, 30, 30));
                     g.setFont(new Font("Segoe UI", Font.BOLD, 13));
                     g.drawString("Elevador " + e.id, baseX, topMargin - 10);
+
                     g.setFont(new Font("Segoe UI", Font.PLAIN, 11));
                     for (int p = pisos; p >= 1; p--) {
                         int idxFromTop = (pisos - p);
@@ -176,11 +165,10 @@ public class UI extends JFrame {
 
                         if (p % 2 == 0) {
                             g.setColor(new Color(230, 230, 230));
-                            g.fillRect(baseX, yBase, cabinaWidth, cabinaHeight);
                         } else {
                             g.setColor(new Color(240, 240, 240));
-                            g.fillRect(baseX, yBase, cabinaWidth, cabinaHeight);
                         }
+                        g.fillRect(baseX, yBase, cabinaWidth, cabinaHeight);
 
                         g.setColor(new Color(180, 180, 180));
                         g.drawRect(baseX, yBase, cabinaWidth, cabinaHeight);
@@ -200,14 +188,21 @@ public class UI extends JFrame {
                     g.setFont(new Font("Segoe UI", Font.BOLD, 12));
                     g.drawString("E" + e.id, baseX + 12, yElev + cabinaHeight / 2 + 4);
                 }
+
+                int nElev = gestor.elevadores.size();
+                int anchoPreferido = leftMargin + nElev * (colWidth + spacingX) + 50;
+                int altoPreferido  = 700;
+
+                Dimension pref = new Dimension(anchoPreferido, altoPreferido);
+                if (!pref.equals(getPreferredSize())) {
+                    setPreferredSize(pref);
+                    revalidate();
+                }
             }
         };
 
-        panelGrafico.setPreferredSize(new Dimension(800, 700));
         panelGrafico.setBorder(
-                BorderFactory.createCompoundBorder(
-                        new LineBorder(new Color(200, 200, 200), 1, true),
-                        new EmptyBorder(10, 10, 10, 10)
+                BorderFactory.createCompoundBorder(new LineBorder(new Color(200, 200, 200), 1, true),new EmptyBorder(10, 10, 10, 10)
                 )
         );
 
@@ -216,7 +211,9 @@ public class UI extends JFrame {
                 JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                 JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
         );
+
         scrollSimulacion.setPreferredSize(new Dimension(800, 320));
+
         scrollSimulacion.getViewport().setBackground(new Color(245, 245, 245));
         scrollSimulacion.setBorder(
                 BorderFactory.createTitledBorder(new LineBorder(new Color(200, 200, 200), 1, true), "Elevadores", 0, 0, new Font("Segoe UI", Font.BOLD, 12), new Color(70, 70, 70)
@@ -224,7 +221,7 @@ public class UI extends JFrame {
         );
 
         add(scrollSimulacion, BorderLayout.SOUTH);
-        //eventos
+
         btnSolicitar.addActionListener((ActionEvent e) -> {
             try {
                 int piso = Integer.parseInt(txtPiso.getText().trim());
@@ -276,10 +273,10 @@ public class UI extends JFrame {
                 }
             }
         });
+
         new Timer(200, e -> refrescarEstado()).start();
         new Timer(200, e -> panelGrafico.repaint()).start();
 
-        // ===== ventana =====
         setSize(900, 700);
         setLocationRelativeTo(null);
         setVisible(true);
